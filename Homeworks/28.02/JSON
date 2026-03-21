@@ -1,0 +1,226 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
+using Path = System.IO.Path; 
+
+public class Product
+{
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+
+    public override string ToString()
+    {
+        return $"Название: {Name}, Цена: {Price:C}";
+    }
+}
+
+public class InventoryManager
+{
+    private string _filePath;
+    private List<Product> _products;
+
+    public InventoryManager()
+    {
+        string currentDirectory = Directory.GetCurrentDirectory();
+        _filePath = Path.Combine(currentDirectory, "inventory.json");
+        _products = LoadInventory();
+    }
+    
+    private List<Product> LoadInventory()
+    {
+        if (File.Exists(_filePath))
+        {
+            try
+            {
+                string jsonString = File.ReadAllText(_filePath);
+                // Если файл пустой, возвращаем пустой список
+                if (string.IsNullOrWhiteSpace(jsonString))
+                {
+                    return new List<Product>();
+                }
+                var options = new JsonSerializerOptions
+                {
+                    AllowTrailingCommas = true
+                };
+                var loadedProducts = JsonSerializer.Deserialize<List<Product>>(jsonString, options);
+                return loadedProducts ?? new List<Product>(); 
+            }
+            catch (JsonException ex)
+            {
+                Console.WriteLine($"Ошибка при чтении файла JSON: {ex.Message}");
+                return new List<Product>(); // В случае ошибки возвращаем пустой список :|
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Непредвиденная ошибка при загрузке инвентаря: {ex.Message}");
+                return new List<Product>();
+            }
+        }
+        else
+        {
+            return new List<Product>();
+        }
+    }
+    private void SaveInventory()
+    {
+        try
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+            string jsonString = JsonSerializer.Serialize(_products, options);
+            File.WriteAllText(_filePath, jsonString);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка при сохранении инвентаря: {ex.Message}");
+        }
+    }
+    
+    public void AddProduct(Product product)
+    {
+        _products.Add(product);
+        SaveInventory();
+        Console.WriteLine($"Товар '{product.Name}' добавлен.");
+    }
+    
+    public void RemoveProductByIndex(int index)
+    {
+        if (index >= 0 && index < _products.Count)
+        {
+            Product removedProduct = _products[index];
+            _products.RemoveAt(index);
+            SaveInventory();
+            Console.WriteLine($"Товар '{removedProduct.Name}' удален.");
+        }
+        else
+        {
+            Console.WriteLine("Ошибка: Неверный индекс товара.");
+        }
+    }
+    
+    public void DisplayProducts()
+    {
+        Console.WriteLine("\n--- Текущие товары ---");
+        if (_products.Count == 0)
+        {
+            Console.WriteLine("Список товаров пуст.");
+        }
+        else
+        {
+            for (int i = 0; i < _products.Count; i++)
+            {
+                Console.WriteLine($"{i + 1}. {_products[i]}");
+            }
+        }
+        Console.WriteLine("-----------------------");
+    }
+    public void InitializeProducts()
+    {
+        if (_products.Count == 0) 
+        {
+            AddProduct(new Product { Name = "Огурец", Price = 120 });
+            AddProduct(new Product { Name = "Помидор", Price = 90 });
+            AddProduct(new Product { Name = "Лук", Price = 60 });
+            Console.WriteLine("Начальный список товаров добавлен.");
+        }
+    }
+
+    public List<Product> GetProducts()
+    {
+        return new List<Product>(_products); 
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        var inventoryManager = new InventoryManager();
+
+        inventoryManager.InitializeProducts();
+
+        while (true)
+        {
+            Console.WriteLine("\nВыберите действие:");
+            Console.WriteLine("1. Показать список товаров");
+            Console.WriteLine("2. Добавить товар из консоли");
+            Console.WriteLine("3. Удалить товар по номеру");
+            Console.WriteLine("4. Выход");
+
+            string choice = Console.ReadLine();
+
+            switch (choice)
+            {
+                case "1":
+                    inventoryManager.DisplayProducts();
+                    break;
+
+                case "2":
+                    AddProductFromConsole(inventoryManager);
+                    break;
+
+                case "3":
+                    RemoveProductFromConsole(inventoryManager);
+                    break;
+
+                case "4":
+                    Console.WriteLine("Выход из программы.");
+                    return;
+
+                default:
+                    Console.WriteLine("Неверный ввод. Пожалуйста, выберите номер из списка.");
+                    break;
+            }
+        }
+    }
+
+    static void AddProductFromConsole(InventoryManager manager)
+    {
+        try
+        {
+            Console.Write("Введите название товара: ");
+            string name = Console.ReadLine();
+
+            Console.Write("Введите цену товара: ");
+
+            if (decimal.TryParse(Console.ReadLine(), out decimal price))
+            {
+                manager.AddProduct(new Product { Name = name, Price = price });
+            }
+            else
+            {
+                Console.WriteLine("Неверный формат цены. Цена должна быть числом.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка при добавлении товара: {ex.Message}");
+        }
+    }
+
+    static void RemoveProductFromConsole(InventoryManager manager)
+    {
+        manager.DisplayProducts();
+        if (manager.GetProducts().Count == 0) return; // Если список пуст,  нет смысла удалять<3
+
+        try
+        {
+            Console.Write("Введите номер товара для удаления: ");
+            if (int.TryParse(Console.ReadLine(), out int index) && index > 0)
+            {
+                manager.RemoveProductByIndex(index - 1);
+            }
+            else
+            {
+                Console.WriteLine("Неверный ввод. Введите число (номер товара).");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка при удалении товара: {ex.Message}");
+        }
+    }
+  }
