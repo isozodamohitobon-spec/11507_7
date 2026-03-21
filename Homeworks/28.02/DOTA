@@ -1,0 +1,109 @@
+using System;
+using System.Collections.Generic;
+
+namespace Dota2
+{
+    // Базовый класс для всех персонажей
+    public abstract class Hero
+    {
+        public string Name { get; set; }
+        public int Level { get; set; }
+        public int Health { get; set; }
+        public int Mana { get; set; }
+        public int Strength { get; set; }
+        public int Agility { get; set; }
+        public int Intelligence { get; set; }
+        public List<Ability> Abilities { get; set; }
+
+        // Конструктор
+        public Hero(string name)
+        {
+            Name = name;
+            Level = 1;
+            Abilities = new List<Ability>();
+        }
+    }
+
+    // Класс способности
+    public class Ability
+    {
+        public string Name { get; set; }
+        public int Damage { get; set; }
+        public int ManaCost { get; set; }
+        public string Description { get; set; }
+
+        public Ability(string name, int damage, int manaCost, string description = "")
+        {
+            Name = name;
+            Damage = damage;
+            ManaCost = manaCost;
+            Description = description;
+        }
+    }
+
+    // Силовой герой
+    public class StrengthHero : Hero
+    {
+        public StrengthHero(string name) : base(name)
+        {
+            Strength = 25;
+            Agility = 10;
+            Intelligence = 15;
+            Health = Strength * 22;
+            Mana = Intelligence * 12;
+        }
+    }
+
+    // Ловкий герой
+    public class AgilityHero : Hero
+    {
+        public AgilityHero(string name) : base(name)
+        {
+            Strength = 15;
+            Agility = 28;
+            Intelligence = 12;
+            Health = Strength * 20;
+            Mana = Intelligence * 12;
+        }
+    }
+
+    // Интеллект герой
+    public class IntelligenceHero : Hero
+    {
+        public IntelligenceHero(string name) : base(name)
+        {
+            Strength = 18;
+            Agility = 14;
+            Intelligence = 30;
+            Health = Strength * 20;
+            Mana = Intelligence * 15;
+        }
+    }
+
+    // Точка входа (для проверки)
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // Создаем персонажей
+            var axe = new StrengthHero("Axe");
+            var phantomAssassin = new AgilityHero("Phantom Assassin");
+            var crystalMaiden = new IntelligenceHero("Crystal Maiden");
+
+            // Создаем способности
+            var berserkersCall = new Ability("Берсерк", 0, 80);
+            var stiflingDagger = new Ability("Кинжал", 120, 65);
+            var frostNova = new Ability("Ледяная Вспышка", 200, 120);
+
+            // Наделяем способностями
+            axe.Abilities.Add(berserkersCall);
+            phantomAssassin.Abilities.Add(stiflingDagger);
+            crystalMaiden.Abilities.Add(frostNova);
+
+            // Просто выводим в консоль, чтобы убедиться что всё работает
+            Console.WriteLine($"Создан герой: {axe.Name}, ХП: {axe.Health}, Способностей: {axe.Abilities.Count}");
+            Console.WriteLine($"Создан герой: {phantomAssassin.Name}, ХП: {phantomAssassin.Health}, Способностей: {phantomAssassin.Abilities.Count}");
+            Console.WriteLine($"Создан герой: {crystalMaiden.Name}, ХП: {crystalMaiden.Health}, Способностей: {crystalMaiden.Abilities.Count}");
+        }
+    }
+}
