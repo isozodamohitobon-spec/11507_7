@@ -1,0 +1,149 @@
+using System;
+using System.Numerics;
+
+//  Класс заказа
+public class Order<T> where T : INumber<T>
+{
+    public int Id { get; set; }
+    public T BasePrice { get; set; }
+}
+
+//  Интерфейсы Builder шагов
+public interface IIdStep
+{
+    IPriceStep<T> SetId<T>(int id) where T : INumber<T>;
+}
+
+public interface IPriceStep<T> where T : INumber<T>
+{
+    IFinalStep<T> SetBasePrice(T price);
+}
+
+public interface IFinalStep<T> where T : INumber<T>
+{
+    Order<T> Build();
+}
+
+//  Builder
+public class OrderBuilder<T> : IIdStep, IPriceStep<T>, IFinalStep<T> where T : INumber<T>
+{
+    private int _id;
+    private T _price;
+
+    private OrderBuilder() { }
+
+    public static IIdStep Create() => new OrderBuilder<T>();
+
+    public IPriceStep<T> SetId(int id)
+    {
+        _id = id;
+        return this;
+    }
+
+    public IFinalStep<T> SetBasePrice(T price)
+    {
+        _price = price;
+        return this;
+    }
+
+    public Order<T> Build()
+    {
+        return new Order<T> { Id = _id, BasePrice = _price };
+    }
+}
+
+//  Абстрактный обработчик
+public abstract class OrderHandler<T> where T : INumber<T>
+{
+    protected OrderHandler<T> Next { get; private set; }
+
+    public void SetNext(OrderHandler<T> next) => Next = next;
+
+    public virtual void Process(Order<T> order)
+    {
+        Next?.Process(order);
+    }
+}
+
+// DiscountHandler
+public class DiscountHandler<T> : OrderHandler<T> where T : INumber<T>
+{
+    private readonly T discount;
+
+    public DiscountHandler(T discount)
+    {
+        this.discount = discount;
+    }
+
+    public override void Process(Order<T> order)
+    {
+        order.BasePrice -= discount;
+        base.Process(order);
+    }
+}
+
+// TaxHandler
+public class TaxHandler<T> : OrderHandler<T> where T : INumber<T>
+{
+    private readonly T coefficient;
+
+    public TaxHandler(T coefficient)
+    {
+        this.coefficient = coefficient;
+    }
+
+    public override void Process(Order<T> order)
+    {
+        order.BasePrice *= coefficient;
+        base.Process(order);
+    }
+}
+
+// ValidationHandler
+public class ValidationHandler<T> : OrderHandler<T> where T : INumber<T>
+{
+    public override void Process(Order<T> order)
+    {
+        if (order.BasePrice < T.Zero)
+            throw new InvalidOperationException("Price cannot be negative!");
+        base.Process(order);
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        // Для decimal
+        var orderDecimal = OrderBuilder<decimal>.Create()
+                            .SetId(1)
+                            .SetBasePrice(100m)
+                            .Build();
+
+        var discountDecimal = new DiscountHandler<decimal>(10m);
+        var taxDecimal = new TaxHandler<decimal>(decimal.CreateChecked(1.2m));
+        var validationDecimal = new ValidationHandler<decimal>();
+
+        discountDecimal.SetNext(taxDecimal);
+        taxDecimal.SetNext(validationDecimal);
+
+        discountDecimal.Process(orderDecimal);
+        Console.WriteLine($"Decimal: {orderDecimal.BasePrice}"); // 108
+
+        // Для double
+        var orderDouble = OrderBuilder<double>.Create()
+                            .SetId(2)
+                            .SetBasePrice(100.0)
+                            .Build();
+
+        var discountDouble = new DiscountHandler<double>(10.0);
+        var taxDouble = new TaxHandler<double>(double.CreateChecked(1.2));
+        var validationDouble = new ValidationHandler<double>();
+
+        discountDouble.SetNext(taxDouble);
+        taxDouble.SetNext(validationDouble);
+
+        discountDouble.Process(orderDouble);
+        Console.WriteLine($"Double: {orderDouble.BasePrice}"); // 108
+    }
+}
