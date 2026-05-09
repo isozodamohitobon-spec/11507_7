@@ -1,0 +1,11 @@
+using System.Reflection;
+
+// 1. Получаем все типы в сборке
+var types = Assembly.GetExecutingAssembly().GetTypes();
+
+// 2. Ищем классы, реализующие интерфейс IHandler (пример)
+var handlers = types.Where(t => t.GetInterfaces()
+    .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandler<>)))
+    .ToList();
+
+// Теперь 'handlers' содержит все  обработчики, найденные автоматически!
