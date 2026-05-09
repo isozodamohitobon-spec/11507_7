@@ -1,0 +1,48 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+
+class Program
+{
+    static void Main()
+    {
+        string path = "bigdata.txt";
+        
+        // 4. Используем Stopwatch для замера времени
+        Stopwatch sw = Stopwatch.StartNew();
+        
+        long countA = 0;
+        // 3. Буфер byte[65536] (64 КБ)
+        byte[] buffer = new byte[65536];
+        const byte targetByte = 65; // Символ 'A' в UTF-8/ASCII
+
+        try
+        {
+            // 1. Читаем через FileStream
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+            {
+                int bytesRead;
+                while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    // 2. Считаем количество байт со значением 65
+                    for (int i = 0; i < bytesRead; i++)
+                    {
+                        if (buffer[i] == targetByte)
+                        {
+                            countA++;
+                        }
+                    }
+                }
+            }
+
+            sw.Stop();
+
+            Console.WriteLine($"Количество символов 'A': {countA}");
+            Console.WriteLine($"Время выполнения: {sw.ElapsedMilliseconds} мс");
+        }
+        catch (FileNotFoundException)
+        {
+            Console.WriteLine("Файл не найден. Сначала запустите код генерации.");
+        }
+    }
+}
