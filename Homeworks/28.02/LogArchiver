@@ -7,49 +7,39 @@ class Program
     static void Main()
     {
         string compressedFile = "logs.gz";
-        string normalFile = "logs.txt";
+        string rawFile = "logs.txt";
+        int iterations = 100_000;
 
-        // Архивированный файл 
-        using (FileStream fileStream = new FileStream(
-                   compressedFile,
-                   FileMode.Create,
-                   FileAccess.Write,
-                   FileShare.Read))
+        using (FileStream fs = new FileStream(compressedFile, FileMode.Create)) 
+        using (GZipStream gs = new GZipStream(fs, CompressionMode.Compress))  
+        using (BufferedStream bs = new BufferedStream(gs))                  
+        using (StreamWriter sw = new StreamWriter(bs))                       
         {
-            using (GZipStream gzipStream =
-                   new GZipStream(fileStream, CompressionMode.Compress))
+            for (int i = 1; i <= iterations; i++)
             {
-                using (BufferedStream bufferedStream =
-                       new BufferedStream(gzipStream))
-                {
-                    using (StreamWriter writer =
-                           new StreamWriter(bufferedStream))
-                    {
-                        for (int i = 0; i < 100_000; i++)
-                        {
-                            writer.WriteLine(
-                                $"[Log] Message {i} - {DateTime.Now}");
-                        }
-                    }
-                }
+                sw.WriteLine($"[Log] Message {i} - {DateTime.Now}");         
             }
         }
 
-        // Обычный текстовый файл
-        using (StreamWriter writer = new StreamWriter(normalFile))
-        {
-            for (int i = 0; i < 100_000; i++)
-            {
-                writer.WriteLine(
-                    $"[Log] Message {i} - {DateTime.Now}");
-            }
-        }
+        // Для сравнения создадим обычный текстовый файл
+        File.WriteAllLines(rawFile, GenerateLogs(iterations));
 
-        //  Сравнение размеров
+        // 6. Сравнение размеров
         FileInfo gzInfo = new FileInfo(compressedFile);
-        FileInfo txtInfo = new FileInfo(normalFile);
+        FileInfo txtInfo = new FileInfo(rawFile);
 
-        Console.WriteLine($"Размер logs.gz  : {gzInfo.Length} байт");
-        Console.WriteLine($"Размер logs.txt : {txtInfo.Length} байт");
+        Console.WriteLine($"Размер сжатого файла (.gz): {gzInfo.Length / 1024.0:F2} КБ");
+        Console.WriteLine($"Размер обычного файла (.txt): {txtInfo.Length / 1024.0:F2} КБ");
+        Console.WriteLine($"Эффективность сжатия: {(double)txtInfo.Length / gzInfo.Length:F1}x");
+    }
+
+    static string[] GenerateLogs(int count)
+    {
+        string[] logs = new string[count];
+        for (int i = 0; i < count; i++)
+            logs[i] = $"[Log] Message {i + 1} - {DateTime.Now}";
+        return logs;
     }
 }
+       
+ 
