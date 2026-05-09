@@ -1,0 +1,33 @@
+using System;
+using System.Reflection;
+
+public static class SimpleMapper
+{
+    public static void Map(object source, object destination)
+    {
+        // 1. Получаем типы объектов
+        Type sourceType = source.GetType();
+        Type destinationType = destination.GetType();
+
+        // 2. Получаем список всех публичных свойств исходного объекта
+        PropertyInfo[] sourceProperties = sourceType.GetProperties();
+
+        foreach (var sourceProp in sourceProperties)
+        {
+            // 3. Ищем свойство с таким же именем в целевом объекте
+            PropertyInfo destProp = destinationType.GetProperty(sourceProp.Name);
+
+            // Проверяем, существует ли такое свойство и можно ли в него записать данные
+            if (destProp != null && destProp.CanWrite)
+            {
+                // Проверяем совместимость типов (упрощенно)
+                if (destProp.PropertyType.IsAssignableFrom(sourceProp.PropertyType))
+                {
+                    // 4. Читаем значение из источника и записываем в цель
+                    object value = sourceProp.GetValue(source);
+                    destProp.SetValue(destination, value);
+                }
+            }
+        }
+    }
+}
