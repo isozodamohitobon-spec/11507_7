@@ -1,0 +1,55 @@
+using System;
+using System.IO;
+using System.IO.Compression;
+
+class Program
+{
+    static void Main()
+    {
+        string compressedFile = "logs.gz";
+        string normalFile = "logs.txt";
+
+        // Архивированный файл 
+        using (FileStream fileStream = new FileStream(
+                   compressedFile,
+                   FileMode.Create,
+                   FileAccess.Write,
+                   FileShare.Read))
+        {
+            using (GZipStream gzipStream =
+                   new GZipStream(fileStream, CompressionMode.Compress))
+            {
+                using (BufferedStream bufferedStream =
+                       new BufferedStream(gzipStream))
+                {
+                    using (StreamWriter writer =
+                           new StreamWriter(bufferedStream))
+                    {
+                        for (int i = 0; i < 100_000; i++)
+                        {
+                            writer.WriteLine(
+                                $"[Log] Message {i} - {DateTime.Now}");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Обычный текстовый файл
+        using (StreamWriter writer = new StreamWriter(normalFile))
+        {
+            for (int i = 0; i < 100_000; i++)
+            {
+                writer.WriteLine(
+                    $"[Log] Message {i} - {DateTime.Now}");
+            }
+        }
+
+        //  Сравнение размеров
+        FileInfo gzInfo = new FileInfo(compressedFile);
+        FileInfo txtInfo = new FileInfo(normalFile);
+
+        Console.WriteLine($"Размер logs.gz  : {gzInfo.Length} байт");
+        Console.WriteLine($"Размер logs.txt : {txtInfo.Length} байт");
+    }
+}
